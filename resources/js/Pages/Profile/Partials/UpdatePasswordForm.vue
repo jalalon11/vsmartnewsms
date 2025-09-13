@@ -18,8 +18,19 @@ const form = useForm({
 const updatePassword = () => {
     form.put(route('password.update'), {
         preserveScroll: true,
-        onSuccess: () => form.reset(),
-        onError: () => {
+        onSuccess: () => {
+            form.reset();
+            // Show success notification
+            if (window.toast) {
+                window.toast.success('Password updated successfully!');
+            }
+        },
+        onError: (errors) => {
+            console.error('Password update failed:', errors);
+            // Show error notification
+            if (window.toast) {
+                window.toast.error('Failed to update password. Please check your current password and try again.');
+            }
             if (form.errors.password) {
                 form.reset('password', 'password_confirmation');
                 passwordInput.value.focus();
@@ -111,9 +122,9 @@ const updatePassword = () => {
                 >
                     <p
                         v-if="form.recentlySuccessful"
-                        class="text-sm text-gray-600"
+                        class="text-sm text-green-400 font-medium"
                     >
-                        Saved.
+                        Password updated successfully!
                     </p>
                 </Transition>
             </div>

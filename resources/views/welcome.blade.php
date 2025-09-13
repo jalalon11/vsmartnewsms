@@ -28,7 +28,7 @@
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
         <!-- Styles / Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/scrollAnimations.js', 'resources/js/webglBackground.js', 'resources/js/chat.js'])
+        @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/scrollAnimations.js', 'resources/js/webglBackground.js'])
 
         <!-- Alpine.js -->
         <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -369,6 +369,155 @@
         </div>
     </div>
 
+    <!-- Simple Chat Functions -->
+    <script>
+        function chat() {
+            return {
+                isChatOpen: false,
+                chatMessages: [
+                    {
+                        sender: 'bot',
+                        message: 'Hello! Welcome to VSMART TUNE UP. How can we help you today?',
+                        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                    }
+                ],
+                isTyping: false,
+                newMessage: '',
+                showServiceModal: false,
+                selectedService: null,
 
+                initChat() {
+                    // Initialize chat functionality
+                },
+
+                toggleChat() {
+                    this.isChatOpen = !this.isChatOpen;
+                },
+
+                sendMessage() {
+                    if (this.newMessage.trim() === '') return;
+                    
+                    // Add user message
+                    this.chatMessages.push({
+                        sender: 'user',
+                        message: this.newMessage,
+                        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                    });
+                    
+                    const userMessage = this.newMessage;
+                    this.newMessage = '';
+                    
+                    // Show typing indicator
+                    this.isTyping = true;
+                    
+                    // Simulate bot response
+                    setTimeout(() => {
+                        this.isTyping = false;
+                        this.chatMessages.push({
+                            sender: 'bot',
+                            message: 'Thank you for your message! For immediate assistance, please contact us via Facebook Messenger or call us at (+63) 995 627 7648.',
+                            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                        });
+                        
+                        // Scroll to bottom
+                        this.$nextTick(() => {
+                            const chatContainer = document.querySelector('.chat-messages');
+                            if (chatContainer) {
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                            }
+                        });
+                    }, 1500);
+                },
+
+                openServiceModal(serviceType) {
+                    const services = {
+                        computer: {
+                            title: 'Computer Services',
+                            description: 'Professional computer repair and maintenance services for desktops and workstations with expert diagnostics and quality solutions.',
+                            features: [
+                                'Hardware Diagnostics',
+                                'Component Replacement',
+                                'Software Installation',
+                                'Virus Removal',
+                                'Data Recovery',
+                                'System Optimization'
+                            ],
+                            pricing: 'Starting at ₱500',
+                            turnaround: '1-3 Days',
+                            warranty: '30 Days'
+                        },
+                        mobile: {
+                            title: 'Mobile Services',
+                            description: 'Expert repair solutions for all major mobile brands with quality parts and prompt service for smartphones and tablets.',
+                            features: [
+                                'Screen Replacement',
+                                'Battery Replacement',
+                                'Bypass Services',
+                                'Water Damage Repair',
+                                'Charging Port Fix',
+                                'Software Issues'
+                            ],
+                            pricing: 'Starting at ₱300',
+                            turnaround: '1-2 Days',
+                            warranty: '15 Days'
+                        },
+                        laptop: {
+                            title: 'Laptop Services',
+                            description: 'Comprehensive laptop repair services including hardware upgrades, screen replacements, and performance optimization.',
+                            features: [
+                                'Screen Replacement',
+                                'Keyboard Repair',
+                                'Battery Replacement',
+                                'RAM/SSD Upgrade',
+                                'Cooling System Cleaning',
+                                'Motherboard Repair'
+                            ],
+                            pricing: 'Starting at ₱800',
+                            turnaround: '2-4 Days',
+                            warranty: '30 Days'
+                        },
+                        printer: {
+                            title: 'Printer Services',
+                            description: 'Professional printer repair and maintenance services for all types of printers with genuine parts and expert care.',
+                            features: [
+                                'Print Head Cleaning',
+                                'Paper Jam Resolution',
+                                'Ink System Repair',
+                                'Driver Installation',
+                                'Network Setup',
+                                'Maintenance Service'
+                            ],
+                            pricing: 'Starting at ₱400',
+                            turnaround: '1-2 Days',
+                            warranty: '15 Days'
+                        },
+                        website: {
+                            title: 'Website Development',
+                            description: 'Custom website development and design services to establish your online presence with modern, responsive designs.',
+                            features: [
+                                'Custom Design',
+                                'Responsive Layout',
+                                'SEO Optimization',
+                                'Content Management',
+                                'E-commerce Integration',
+                                'Maintenance Support'
+                            ],
+                            pricing: 'Starting at ₱15,000',
+                            turnaround: '1-2 Weeks',
+                            warranty: '90 Days'
+                        }
+                    };
+                    
+                    this.selectedService = services[serviceType] || null;
+                    this.showServiceModal = true;
+                },
+
+                closeServiceModal() {
+                    this.showServiceModal = false;
+                    this.selectedService = null;
+                }
+            }
+        }
+    </script>
     </body>
 </html>

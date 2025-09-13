@@ -143,7 +143,7 @@ const isCurrentRoute = (routeName) => {
         <!-- Main content -->
         <div class="lg:pl-64">
             <!-- Top navigation -->
-            <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-black px-4 shadow-lg sm:gap-x-6 sm:px-6 lg:px-8">
+            <div class="fixed top-0 left-0 right-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-black px-4 shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 lg:left-64">
                 <!-- Mobile menu button -->
                 <button
                     type="button"
@@ -166,12 +166,12 @@ const isCurrentRoute = (routeName) => {
                 <div class="h-6 w-px bg-gray-800 lg:hidden" />
 
                 <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-                    <div class="flex flex-1 items-center">
-                        <!-- Page header will be inserted here -->
-                        <header v-if="$slots.header" class="flex-1">
-                            <slot name="header" />
-                        </header>
-                    </div>
+                        <div class="flex flex-1 items-center">
+                            <!-- Page header will be inserted here -->
+                            <header v-if="$slots.header" class="flex-1">
+                                <slot name="header" />
+                            </header>
+                        </div>
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
                         <!-- Profile dropdown -->
                         <Dropdown align="right" width="48">
@@ -216,7 +216,7 @@ const isCurrentRoute = (routeName) => {
             </div>
 
             <!-- Page content -->
-            <main class="flex-1">
+            <main class="flex-1 pt-16">
                 <slot />
             </main>
         </div>

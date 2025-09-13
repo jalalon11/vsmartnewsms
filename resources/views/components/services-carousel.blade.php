@@ -465,7 +465,7 @@
         <div class="mt-20 max-w-5xl mx-auto">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
                 <div class="text-center scroll-scale-up delay-100">
-                    <div class="text-4xl font-bold text-red-500 mb-2">100+</div>
+                    <div class="text-4xl font-bold text-red-500 mb-2">190+</div>
                     <div class="text-gray-400">Happy Customers</div>
                 </div>
                 <div class="text-center scroll-scale-up delay-300">

@@ -1,27 +1,35 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { Link, usePage, router } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import LoadingSpinner from '@/Components/LoadingSpinner.vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
 
-const sidebarOpen = ref(false);
-const sidebarCollapsed = ref(false);
-const isLoading = ref(false);
-const isTransitioning = ref(false);
-
-// Get current route for active state checking
-const page = usePage();
-const currentRoute = computed(() => page.url);
-
-// Load sidebar state from localStorage on mount
-const initializeSidebar = () => {
-    const savedCollapsedState = localStorage.getItem('sidebarCollapsed');
-    if (savedCollapsedState !== null) {
-        sidebarCollapsed.value = JSON.parse(savedCollapsedState);
+const props = defineProps({
+    isAdminView: {
+        type: Boolean,
+        default: false
     }
+});
 
+const showingNavigationDropdown = ref(false);
+const sidebarOpen = ref(false);
+// Initialize sidebar collapsed state from localStorage
+const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
+const isLoading = ref(false);
+
+// Watch for changes to sidebarCollapsed and save to localStorage
+const toggleSidebar = () => {
+    sidebarCollapsed.value = !sidebarCollapsed.value;
+    localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value.toString());
+};
+
+const page = usePage();
+const user = computed(() => page.props.auth.user);
+
+onMounted(() => {
     // Listen for Inertia navigation events
     router.on('start', () => {
         isLoading.value = true;
@@ -30,11 +38,10 @@ const initializeSidebar = () => {
     router.on('finish', () => {
         isLoading.value = false;
     });
-};
+});
 
-
-
-const navigationItems = [
+// Technician-specific navigation items
+const navigationItems = computed(() => [
     {
         name: 'Dashboard',
         href: 'dashboard',
@@ -102,175 +109,115 @@ const navigationItems = [
         icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
         description: 'System configuration and settings'
     },
-];
+]);
 
-// Optimized toggle functions with debouncing
-let toggleTimeout = null;
-
-const toggleSidebar = () => {
-    if (isTransitioning.value) return;
-
-    isTransitioning.value = true;
-    sidebarOpen.value = !sidebarOpen.value;
-
-    // Reset transition flag after animation completes
-    setTimeout(() => {
-        isTransitioning.value = false;
-    }, 300);
+// Define isCurrentRoute as a method
+const isCurrentRoute = (routeName) => {
+    return route().current(routeName);
 };
-
-const toggleCollapse = () => {
-    if (isTransitioning.value) return;
-
-    isTransitioning.value = true;
-    sidebarCollapsed.value = !sidebarCollapsed.value;
-
-    // Batch localStorage update
-    if (toggleTimeout) clearTimeout(toggleTimeout);
-    toggleTimeout = setTimeout(() => {
-        localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed.value));
-    }, 100);
-
-    if (sidebarCollapsed.value) {
-        sidebarOpen.value = false;
-    }
-
-    // Reset transition flag after animation completes
-    setTimeout(() => {
-        isTransitioning.value = false;
-    }, 300);
-};
-
-// Debounced resize handler
-let resizeTimeout = null;
-const handleResize = () => {
-    if (resizeTimeout) clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        if (window.innerWidth >= 1024) {
-            sidebarOpen.value = false;
-        }
-    }, 150);
-};
-
-// Optimized route checking
-const isActiveRoute = (href) => {
-    return currentRoute.value.startsWith(route(href));
-};
-
-// Watch for route changes and preserve sidebar state
-watch(currentRoute, () => {
-    // Preserve sidebar state during navigation
-    const savedState = localStorage.getItem('sidebarCollapsed');
-    if (savedState !== null) {
-        const parsedState = JSON.parse(savedState);
-        if (sidebarCollapsed.value !== parsedState) {
-            sidebarCollapsed.value = parsedState;
-        }
-    }
-});
-
-// Performance monitoring (development only)
-const logPerformance = (action) => {
-    if (process.env.NODE_ENV === 'development') {
-        console.log(`Sidebar ${action} - Performance:`, {
-            timestamp: performance.now(),
-            memory: performance.memory?.usedJSHeapSize || 'N/A'
-        });
-    }
-};
-
-onMounted(() => {
-    // Initialize sidebar state
-    initializeSidebar();
-
-    // Add resize listener
-    window.addEventListener('resize', handleResize, { passive: true });
-
-    // Log performance
-    logPerformance('mounted');
-});
-
-onUnmounted(() => {
-    window.removeEventListener('resize', handleResize);
-    if (toggleTimeout) clearTimeout(toggleTimeout);
-    if (resizeTimeout) clearTimeout(resizeTimeout);
-    logPerformance('unmounted');
-});
 </script>
 
 <template>
     <div class="min-h-screen bg-black">
-        <!-- Sidebar -->
-        <div
-            class="fixed inset-y-0 left-0 z-50 bg-black border-r border-gray-800 shadow-2xl sidebar-optimized sidebar-transition reduce-paint flex flex-col"
-            :class="[
-                sidebarCollapsed ? 'w-16' : 'w-64',
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-            ]"
-        >
-            <!-- Header -->
-            <div class="flex items-center justify-between h-16 bg-gradient-to-r from-red-600 to-red-700 border-b border-red-500">
-                <Link :href="route('dashboard')" class="flex items-center px-4" v-if="!sidebarCollapsed">
-                    <ApplicationLogo class="block h-8 w-auto fill-current text-white" />
-                    <span class="ml-2 text-xl font-bold text-white">VSMART SMS</span>
-                </Link>
-                <Link :href="route('dashboard')" class="flex items-center justify-center w-full" v-else>
-                    <ApplicationLogo class="block h-8 w-auto fill-current text-white" />
-                </Link>
+        <!-- Mobile menu overlay -->
+        <div v-if="sidebarOpen" class="fixed inset-0 z-40 lg:hidden" @click="sidebarOpen = false">
+            <div class="fixed inset-0 bg-black opacity-75"></div>
+        </div>
 
-                <!-- Collapse button (desktop only) -->
+        <!-- Sidebar -->
+        <div class="fixed inset-y-0 left-0 z-50 bg-black border-r border-gray-800 transform transition-all duration-300 ease-in-out shadow-2xl lg:translate-x-0 flex flex-col" :class="{ 
+            '-translate-x-full': !sidebarOpen,
+            'w-64': !sidebarCollapsed,
+            'w-16': sidebarCollapsed
+        }">
+            <!-- Logo -->
+            <div class="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-red-600 to-red-700 border-b border-red-500">
+                <Link :href="route('dashboard')" class="flex items-center" :class="{ 'justify-center w-full': sidebarCollapsed, 'space-x-3': !sidebarCollapsed }">
+                    <ApplicationLogo class="w-8 h-8 text-white flex-shrink-0" />
+                    <span v-show="!sidebarCollapsed" class="text-xl font-bold text-white transition-all duration-300 overflow-hidden whitespace-nowrap">AdminPanel</span>
+                </Link>
+                <!-- Collapse toggle button for desktop -->
                 <button
-                    @click="toggleCollapse"
-                    class="hidden lg:flex items-center justify-center w-8 h-8 mr-2 text-white hover:bg-red-800 rounded-lg collapse-btn"
-                    :disabled="isTransitioning"
+                    v-show="!sidebarCollapsed"
+                    @click="toggleSidebar"
+                    class="hidden lg:block p-1 rounded-md text-white hover:bg-red-800 transition-colors duration-200 flex-shrink-0"
                 >
-                    <svg class="w-4 h-4 transform transition-transform duration-200" :class="{ 'rotate-180': sidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <!-- Expand button when collapsed -->
+                <button
+                    v-show="sidebarCollapsed"
+                    @click="toggleSidebar"
+                    class="hidden lg:block absolute right-2 p-1 rounded-md text-white hover:bg-red-800 transition-colors duration-200"
+                >
+                    <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+                <!-- Close button for mobile -->
+                <button
+                    @click="sidebarOpen = false"
+                    class="lg:hidden p-1 rounded-md text-white hover:bg-red-800 transition-colors duration-200"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
 
             <!-- Navigation -->
-            <nav class="mt-6 px-3 sidebar-scroll flex-1 overflow-y-auto pb-20">
-                <div class="space-y-1">
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <nav class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 mt-8 px-4 space-y-2 pb-4">
+                    <div class="mb-6" v-if="!sidebarCollapsed">
+                        <h3 class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider transition-opacity duration-300">
+                            Technician Tools
+                        </h3>
+                    </div>
+
                     <Link
                         v-for="item in navigationItems"
                         :key="item.name"
                         :href="route(item.href)"
-                        class="group flex items-center px-3 py-3 text-sm font-medium rounded-lg nav-item-optimized relative"
-                        :class="[
-                            isActiveRoute(item.href)
-                                ? 'bg-red-600 text-white shadow-lg'
-                                : 'text-gray-300 hover:bg-red-600 hover:text-white',
-                            sidebarCollapsed ? 'justify-center' : ''
-                        ]"
+                        class="group flex items-center text-sm font-medium text-gray-300 rounded-lg transition-all duration-200 hover:bg-red-600 hover:text-white hover:shadow-lg"
+                        :class="{
+                            'bg-red-600 text-white shadow-lg': isCurrentRoute(item.href),
+                            'px-3 py-3': !sidebarCollapsed,
+                            'px-2 py-3 justify-center': sidebarCollapsed
+                        }"
                         :title="sidebarCollapsed ? item.name : ''"
                     >
-                        <svg class="flex-shrink-0 w-5 h-5" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                            class="h-5 w-5 transition-colors duration-200 flex-shrink-0"
+                            :class="{
+                                'text-white': isCurrentRoute(item.href),
+                                'text-gray-400 group-hover:text-white': !isCurrentRoute(item.href),
+                                'mr-3': !sidebarCollapsed
+                            }"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
                         </svg>
-                        <div v-if="!sidebarCollapsed" class="flex-1 nav-text-transition">
+                        <div v-if="!sidebarCollapsed" class="flex-1 transition-opacity duration-300">
                             <div class="font-medium">{{ item.name }}</div>
-                            <div class="text-xs text-gray-400 group-hover:text-gray-200">{{ item.description }}</div>
-                        </div>
-
-                        <!-- Tooltip for collapsed state -->
-                        <div v-if="sidebarCollapsed" class="absolute left-16 bg-gray-900 text-white px-2 py-1 rounded-md text-xs opacity-0 group-hover:opacity-100 tooltip-optimized whitespace-nowrap z-50">
-                            {{ item.name }}
+                            <div class="text-xs opacity-75">{{ item.description }}</div>
                         </div>
                     </Link>
-                </div>
-            </nav>
+                </nav>
+            </div>
 
-            <!-- User info at bottom -->
-            <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-800">
-                <div class="flex items-center" :class="sidebarCollapsed ? 'justify-center' : ''">
-                    <div class="flex-shrink-0 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-medium text-white">{{ $page.props.auth.user.name.charAt(0) }}</span>
+            <!-- User Info -->
+            <div class="flex-shrink-0 p-3 border-t border-gray-800 bg-black">
+                <div class="flex items-center" :class="{ 'justify-center': sidebarCollapsed, 'space-x-3': !sidebarCollapsed }">
+                    <div class="flex-shrink-0 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center" :title="sidebarCollapsed ? user?.name : ''">
+                        <span class="text-sm font-medium text-white">{{ user?.name?.charAt(0) }}</span>
                     </div>
-                    <div v-if="!sidebarCollapsed" class="ml-3 flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white truncate">{{ $page.props.auth.user.name }}</p>
-                        <p class="text-xs text-gray-400 truncate">{{ $page.props.auth.user.role || 'User' }}</p>
+                    <div v-show="!sidebarCollapsed" class="flex-1 min-w-0 transition-all duration-300 overflow-hidden">
+                        <p class="text-sm font-medium text-white truncate">{{ user?.name }}</p>
+                        <p class="text-xs text-gray-400 truncate">Technician</p>
                     </div>
                 </div>
             </div>
@@ -278,96 +225,86 @@ onUnmounted(() => {
 
         <!-- Mobile sidebar overlay -->
         <div v-if="sidebarOpen" class="fixed inset-0 z-40 lg:hidden" @click="sidebarOpen = false">
-            <div class="absolute inset-0 bg-black bg-opacity-75 mobile-overlay"></div>
+            <div class="fixed inset-0 bg-black opacity-75 transition-opacity duration-300"></div>
         </div>
 
         <!-- Main content -->
-        <div
-            class="main-content-optimized reduce-paint"
-            :class="sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'"
-        >
+        <div class="transition-all duration-300" :class="{ 'lg:pl-64': !sidebarCollapsed, 'lg:pl-16': sidebarCollapsed }">
             <!-- Top navigation -->
-            <div class="bg-gradient-to-r from-gray-900 to-black border-b border-gray-800 shadow-lg">
-                <div class="px-4 sm:px-6 lg:px-8">
-                    <div class="flex items-center justify-between h-16">
-                        <!-- Mobile menu button -->
-                        <button
-                            @click="toggleSidebar"
-                            class="lg:hidden inline-flex items-center justify-center p-2 rounded-lg text-white hover:text-red-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 transition-colors duration-200"
-                        >
-                            <svg class="h-6 w-6 transform transition-transform duration-200" :class="{ 'rotate-90': sidebarOpen }" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
+            <div class="fixed top-0 left-0 right-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-black px-4 shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 transition-all duration-300" :class="{ 'lg:left-64': !sidebarCollapsed, 'lg:left-16': sidebarCollapsed }">
+                <!-- Mobile menu button -->
+                <button
+                    type="button"
+                    class="-m-2.5 p-2.5 text-gray-400 hover:text-white lg:hidden transition-colors duration-200"
+                    @click="sidebarOpen = !sidebarOpen"
+                >
+                    <span class="sr-only">Open sidebar</span>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                </button>
 
-                        <!-- Breadcrumb or page title -->
-                        <div class="flex-1 lg:ml-4">
-                            <div class="flex items-center space-x-2 text-sm text-gray-400">
-                                <!-- <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                                </svg>
-                                <span>VSMART TUNE UP</span> -->
-                            </div>
-                        </div>
+                <!-- Mobile logo -->
+                <div class="flex lg:hidden items-center space-x-3">
+                    <ApplicationLogo class="w-6 h-6 text-white" />
+                    <span class="text-lg font-bold text-white">TechPanel</span>
+                </div>
 
-                        <!-- User menu and notifications -->
-                        <div class="flex items-center space-x-4">
-                            <!-- Notifications -->
-                            <!-- <button class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM10.07 2.82l3.12 3.12M7.05 5.84l3.12 3.12M4.03 8.86l3.12 3.12M1.01 11.88l3.12 3.12" />
-                                </svg>
-                            </button> -->
+                <!-- Separator -->
+                <div class="h-6 w-px bg-gray-800 lg:hidden" />
 
-                            <!-- User menu -->
-                            <Dropdown align="right" width="48">
-                                <template #trigger>
-                                    <button class="flex items-center space-x-3 p-2 rounded-lg text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+                <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+                    <div class="flex flex-1 items-center">
+                        <!-- Page header will be inserted here -->
+                        <header v-if="$slots.header" class="flex-1">
+                            <slot name="header" />
+                        </header>
+                    </div>
+                    <div class="flex items-center gap-x-4 lg:gap-x-6">
+                        <!-- Profile dropdown -->
+                        <Dropdown align="right" width="48">
+                            <template #trigger>
+                                <span class="inline-flex rounded-md">
+                                    <button
+                                        type="button"
+                                        class="flex items-center space-x-3 p-2 rounded-lg text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200"
+                                    >
                                         <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                                            <span class="text-sm font-medium">{{ $page.props.auth.user.name.charAt(0) }}</span>
+                                            <span class="text-sm font-medium">{{ user?.name?.charAt(0) }}</span>
                                         </div>
-                                        <div class="hidden md:block text-left">
-                                            <div class="text-sm font-medium">{{ $page.props.auth.user.name }}</div>
-                                            <div class="text-xs text-gray-400">{{ $page.props.auth.user.role || 'User' }}</div>
+                                        <div class="hidden sm:block">
+                                            <div class="text-sm font-medium">{{ user?.name }}</div>
+                                            <div class="text-xs text-gray-400">Admin</div>
                                         </div>
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        <svg
+                                            class="ml-2 -mr-0.5 h-4 w-4"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 20 20"
+                                            fill="currentColor"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                clip-rule="evenodd"
+                                            />
                                         </svg>
                                     </button>
-                                </template>
+                                </span>
+                            </template>
 
-                                <template #content>
-                                    <div class="py-1">
-                                        <DropdownLink :href="route('profile.edit')" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-500 hover:text-white transition-colors duration-200">
-                                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                            Profile
-                                        </DropdownLink>
-                                        <hr class="border-gray-200">
-                                        <DropdownLink :href="route('logout')" method="post" as="button" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-red-500 hover:text-white transition-colors duration-200">
-                                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                            </svg>
-                                            Log Out
-                                        </DropdownLink>
-                                    </div>
-                                </template>
-                            </Dropdown>
-                        </div>
+                            <template #content>
+                                <DropdownLink :href="route('profile.edit')"> Profile </DropdownLink>
+                                <DropdownLink :href="route('logout')" method="post" as="button">
+                                    Log Out
+                                </DropdownLink>
+                            </template>
+                        </Dropdown>
                     </div>
                 </div>
             </div>
 
-            <!-- Page Heading -->
-            <header v-if="$slots.header" class="bg-gradient-to-r from-gray-900 to-black border-b border-gray-800 shadow-sm">
-                <div class="px-4 py-6 sm:px-6 lg:px-8">
-                    <slot name="header" />
-                </div>
-            </header>
-
-            <!-- Page Content -->
-            <main class="bg-black min-h-screen">
+            <!-- Page content -->
+            <main class="flex-1 pt-16"> <!-- Reverted to pt-16 -->
                 <slot />
             </main>
         </div>
