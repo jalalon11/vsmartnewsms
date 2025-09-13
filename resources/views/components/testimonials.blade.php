@@ -1,7 +1,7 @@
 <!-- Testimonials Section -->
 <section id="testimonials" class="py-20 bg-black border-t border-red-800" 
     x-data="{ 
-        showFeedbackForm: {{ session('success') ? 'true' : 'false' }},
+        showFeedbackForm: false,
         toggleForm() {
             console.log('Toggle form called, current state:', this.showFeedbackForm);
             this.showFeedbackForm = !this.showFeedbackForm;
@@ -9,14 +9,15 @@
         },
         init() {
             console.log('Alpine.js initialized, showFeedbackForm:', this.showFeedbackForm);
+            // Only show modal if there's a success message AND we're specifically on the testimonials section
             if(window.location.hash === '#testimonials' && document.getElementById('success-alert')) {
                 this.showFeedbackForm = true;
-                console.log('Hash detected, showFeedbackForm set to:', this.showFeedbackForm);
+                console.log('Hash detected with success alert, showFeedbackForm set to:', this.showFeedbackForm);
                 // Scroll to testimonials section
                 this.$el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
-    }">
+    }" x-cloak>
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
             <div class="inline-block px-3 py-1 bg-red-900/30 rounded-full text-red-500 text-sm font-semibold mb-4 scroll-fade-up">WHAT PEOPLE SAY</div>
@@ -170,6 +171,7 @@
 
         <!-- Modal Backdrop -->
         <div x-show="showFeedbackForm" 
+            x-cloak
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"
