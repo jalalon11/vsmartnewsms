@@ -11,9 +11,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Add CORS middleware globally
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+        
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+        ]);
+        
+        // Add CORS to web middleware for Inertia.js requests
+        $middleware->web(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
         ]);
 
         // Register custom middleware aliases
