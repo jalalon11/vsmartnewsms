@@ -19,7 +19,7 @@ A comprehensive Laravel-based hardware repair shop management system designed to
 - **Registration Control**: Admin-controlled user registration with blocked registration page
 
 ### Analytics & Reporting
-- **Customer Analytics**: Customer acquisition trends, repeat customer analysis, and geographic distribution
+- **Customer Analytics**: Customer acquisition trends, repeat customer analysis, and geographic distributions
 - **Sales Analytics**: Revenue tracking, service performance, and financial reporting
 - **Parts Analytics**: Inventory analysis, usage patterns, and reorder recommendations
 - **Device Repair Analytics**: Device type trends, repair frequency, and success rates
